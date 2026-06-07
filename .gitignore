@@ -1,0 +1,53 @@
+# PocketMineJiafei Source-Only Gitignore
+
+# Core Data & Runtime artifacts
+players/
+worlds/
+plugin_data/
+plugins/
+bin*/
+timings/
+crashdumps/
+memory_dumps/
+resource_packs/
+server.properties
+pocketmine.yml
+server.lock
+*.log
+*.phar
+*.txt
+
+# Metadata & CI/CD
+.github/
+.travis.yml
+.gitattributes
+.gitmodules
+.editorconfig
+phpstan.neon*
+composer.lock
+
+# Build & Documentation
+build/
+changelogs/
+doxygen/
+
+# Temporary / Extracted / Junk
+chinese_extract/
+*.7z
+*.jar
+
+# Startup Scripts
+start.sh
+start.ps1
+start.cmd
+
+# Common IDEs & System
+.idea/
+.vscode/
+nbproject/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Composer
+vendor/
