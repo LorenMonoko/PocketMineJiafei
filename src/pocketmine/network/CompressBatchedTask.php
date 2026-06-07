@@ -48,7 +48,6 @@ class CompressBatchedTask extends AsyncTask{
 		$batch->payload = $this->data;
 		$this->data = null;
 
-		$batch->setCompressionLevel($this->level);
 		$batch->encode();
 
 		$this->setResult($batch->buffer);

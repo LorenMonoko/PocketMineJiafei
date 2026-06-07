@@ -1935,23 +1935,9 @@ class Server{
 		$targets = array_filter($players, function(Player $player) : bool{ return $player->isConnected(); });
 
 		if(!empty($targets)){
-			$pk = new BatchPacket();
-
 			foreach($packets as $p){
+				$pk = new BatchPacket();
 				$pk->addPacket($p);
-			}
-
-			if(Network::$BATCH_THRESHOLD >= 0 and strlen($pk->payload) >= Network::$BATCH_THRESHOLD){
-				$pk->setCompressionLevel($this->networkCompressionLevel);
-			}else{
-				$pk->setCompressionLevel(0); //Do not compress packets under the threshold
-				$forceSync = true;
-			}
-
-			if(!$forceSync and !$immediate and $this->networkCompressionAsync){
-				$task = new CompressBatchedTask($pk, $targets);
-				$this->asyncPool->submitTask($task);
-			}else{
 				$this->broadcastPacketsCallback($pk, $targets, $immediate);
 			}
 		}
