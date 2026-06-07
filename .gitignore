@@ -1,0 +1,34 @@
+# PocketMineJiafei Gitignore
+
+# Core Data & Runtime artifacts
+players/
+worlds/
+plugin_data/
+plugins/
+bin*/
+timings/
+crashdumps/
+memory_dumps/
+resource_packs/
+server.properties
+pocketmine.yml
+server.lock
+*.log
+*.phar
+!PMJ-1.11.4.phar
+
+# Exclude extracted/temporary data
+chinese_extract/
+*.7z
+*.jar
+
+# Common IDEs & System
+.idea/
+.vscode/
+nbproject/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Composer
+vendor/

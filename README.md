@@ -1,0 +1,32 @@
+<p align="center">
+	<a href="https://pmmp.io"><img src="http://cdn.pocketmine.net/img/PocketMineJiafei-h.png"></img></a><br>
+	<b>A highly customisable, open source server software for Minecraft: Bedrock Edition written in PHP</b>
+</p>
+
+[![Build Status](https://travis-ci.org/pmmp/PocketMineJiafei.svg?branch=master)](https://travis-ci.org/pmmp/PocketMineJiafei)
+
+### Getting started
+- [Documentation](http://pmmp.readthedocs.org/)
+- [Installation instructions](https://pmmp.readthedocs.io/en/rtfd/installation.html)
+- [Docker image](https://hub.docker.com/r/pmmp/pocketmine-mp)
+- [Plugin repository](https://poggit.pmmp.io/plugins)
+
+### Discussion
+- [Forums](https://forums.pmmp.io/)
+- [Community Discord](https://discord.gg/bge7dYQ)
+
+### For developers
+ * [Latest API documentation](https://jenkins.pmmp.io/job/PocketMineJiafei-doc/doxygen/) - Doxygen documentation generated from development
+ * [DevTools](https://github.com/pmmp/PocketMine-DevTools/) - Development tools plugin for creating plugins
+ * [ExamplePlugin](https://github.com/pmmp/ExamplePlugin/) - Example plugin demonstrating some basic API features
+ * [Contributing Guidelines](CONTRIBUTING.md)
+
+### Donate
+- Bitcoin Cash (BCH): `qq3r46hn6ljnhnqnfwxt5pg3g447eq9jhvw5ddfear`
+- Bitcoin (BTC): `171u8K9e4FtU6j3e5sqNoxKUgEw9qWQdRV`
+- [Patreon](https://www.patreon.com/pocketminemp)
+
+## Licensing information
+This project is licensed under LGPL-3.0. Please see the [LICENSE](/LICENSE) file for details.
+
+pmmp/PocketMine are not affiliated with Mojang. All brands and trademarks belong to their respective owners. PocketMineJiafei is not a Mojang-approved software, nor is it associated with Mojang.
