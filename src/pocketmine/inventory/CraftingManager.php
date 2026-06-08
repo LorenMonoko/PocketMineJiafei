@@ -44,8 +44,8 @@ class CraftingManager{
 	/** @var FurnaceRecipe[] */
 	protected $furnaceRecipes = [];
 
-	/** @var BatchPacket */
-	private $craftingDataCache;
+	/** @var BatchPacket[] */
+	private $craftingDataCache = [];
 
 	public function __construct(){
 		$this->init();
@@ -88,32 +88,36 @@ class CraftingManager{
 	 */
 	public function buildCraftingDataCache() : void{
 		Timings::$craftingDataCacheRebuildTimer->startTiming();
-		$pk = new CraftingDataPacket();
-		$pk->cleanRecipes = true;
+		$this->craftingDataCache = [];
+		foreach(\pocketmine\network\mcpe\protocol\ProtocolInfo::ACCEPTED_PROTOCOLS as $protocol){
+			$pk = new CraftingDataPacket();
+			$pk->cleanRecipes = true;
+			$pk->protocol = $protocol;
 
-		foreach($this->shapelessRecipes as $list){
-			foreach($list as $recipe){
-				$pk->addShapelessRecipe($recipe);
+			foreach($this->shapelessRecipes as $list){
+				foreach($list as $recipe){
+					$pk->addShapelessRecipe($recipe);
+				}
 			}
-		}
-		foreach($this->shapedRecipes as $list){
-			foreach($list as $recipe){
-				$pk->addShapedRecipe($recipe);
+			foreach($this->shapedRecipes as $list){
+				foreach($list as $recipe){
+					$pk->addShapedRecipe($recipe);
+				}
 			}
+
+			foreach($this->furnaceRecipes as $recipe){
+				$pk->addFurnaceRecipe($recipe);
+			}
+
+			$pk->encode();
+
+			$batch = new BatchPacket();
+			$batch->addPacket($pk);
+			$batch->setCompressionLevel(Server::getInstance()->networkCompressionLevel);
+			$batch->encode();
+
+			$this->craftingDataCache[$protocol] = $batch;
 		}
-
-		foreach($this->furnaceRecipes as $recipe){
-			$pk->addFurnaceRecipe($recipe);
-		}
-
-		$pk->encode();
-
-		$batch = new BatchPacket();
-		$batch->addPacket($pk);
-		$batch->setCompressionLevel(Server::getInstance()->networkCompressionLevel);
-		$batch->encode();
-
-		$this->craftingDataCache = $batch;
 		Timings::$craftingDataCacheRebuildTimer->stopTiming();
 	}
 
@@ -122,12 +126,12 @@ class CraftingManager{
 	 *
 	 * @return BatchPacket
 	 */
-	public function getCraftingDataPacket() : BatchPacket{
-		if($this->craftingDataCache === null){
+	public function getCraftingDataPacket(int $protocol = \pocketmine\network\mcpe\protocol\ProtocolInfo::CURRENT_PROTOCOL) : BatchPacket{
+		if(empty($this->craftingDataCache)){
 			$this->buildCraftingDataCache();
 		}
 
-		return $this->craftingDataCache;
+		return $this->craftingDataCache[$protocol] ?? $this->craftingDataCache[\pocketmine\network\mcpe\protocol\ProtocolInfo::CURRENT_PROTOCOL];
 	}
 
 	/**
@@ -207,7 +211,7 @@ class CraftingManager{
 	public function registerShapedRecipe(ShapedRecipe $recipe) : void{
 		$this->shapedRecipes[self::hashOutputs($recipe->getResults())][] = $recipe;
 
-		$this->craftingDataCache = null;
+		$this->craftingDataCache = [];
 	}
 
 	/**
@@ -216,7 +220,7 @@ class CraftingManager{
 	public function registerShapelessRecipe(ShapelessRecipe $recipe) : void{
 		$this->shapelessRecipes[self::hashOutputs($recipe->getResults())][] = $recipe;
 
-		$this->craftingDataCache = null;
+		$this->craftingDataCache = [];
 	}
 
 	/**
@@ -225,7 +229,7 @@ class CraftingManager{
 	public function registerFurnaceRecipe(FurnaceRecipe $recipe) : void{
 		$input = $recipe->getInput();
 		$this->furnaceRecipes[$input->getId() . ":" . ($input->hasAnyDamageValue() ? "?" : $input->getDamage())] = $recipe;
-		$this->craftingDataCache = null;
+		$this->craftingDataCache = [];
 	}
 
 	/**

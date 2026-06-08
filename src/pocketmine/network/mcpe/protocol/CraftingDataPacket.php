@@ -53,6 +53,8 @@ class CraftingDataPacket extends DataPacket{
 	public $cleanRecipes = false;
 
 	public $decodedEntries = [];
+	/** @var int */
+	public $protocol = ProtocolInfo::CURRENT_PROTOCOL;
 
 	public function clean(){
 		$this->entries = [];
@@ -83,6 +85,9 @@ class CraftingDataPacket extends DataPacket{
 						$entry["output"][] = $this->getSlot();
 					}
 					$entry["uuid"] = $this->getUUID()->toString();
+					if($this->protocol >= 354){
+						$entry["block"] = $this->getString();
+					}
 
 					break;
 				case self::ENTRY_SHAPED:
@@ -100,14 +105,25 @@ class CraftingDataPacket extends DataPacket{
 						$entry["output"][] = $this->getSlot();
 					}
 					$entry["uuid"] = $this->getUUID()->toString();
+					if($this->protocol >= 354){
+						$entry["block"] = $this->getString();
+					}
 					break;
 				case self::ENTRY_FURNACE:
 				case self::ENTRY_FURNACE_DATA:
-					$entry["inputId"] = $this->getVarInt();
+					$inputId = $this->getVarInt();
+					$inputData = -1;
 					if($recipeType === self::ENTRY_FURNACE_DATA){
-						$entry["inputDamage"] = $this->getVarInt();
+						$inputData = $this->getVarInt();
+						if($inputData === 0x7fff){
+							$inputData = -1;
+						}
 					}
+					$entry["input"] = ItemFactory::get($inputId, $inputData);
 					$entry["output"] = $this->getSlot();
+					if($this->protocol >= 354){
+						$entry["block"] = $this->getString();
+					}
 					break;
 				case self::ENTRY_MULTI:
 					$entry["uuid"] = $this->getUUID()->toString();
@@ -120,20 +136,20 @@ class CraftingDataPacket extends DataPacket{
 		$this->getBool(); //cleanRecipes
 	}
 
-	private static function writeEntry($entry, NetworkBinaryStream $stream){
+	private static function writeEntry($entry, NetworkBinaryStream $stream, int $protocol){
 		if($entry instanceof ShapelessRecipe){
-			return self::writeShapelessRecipe($entry, $stream);
+			return self::writeShapelessRecipe($entry, $stream, $protocol);
 		}elseif($entry instanceof ShapedRecipe){
-			return self::writeShapedRecipe($entry, $stream);
+			return self::writeShapedRecipe($entry, $stream, $protocol);
 		}elseif($entry instanceof FurnaceRecipe){
-			return self::writeFurnaceRecipe($entry, $stream);
+			return self::writeFurnaceRecipe($entry, $stream, $protocol);
 		}
 		//TODO: add MultiRecipe
 
 		return -1;
 	}
 
-	private static function writeShapelessRecipe(ShapelessRecipe $recipe, NetworkBinaryStream $stream){
+	private static function writeShapelessRecipe(ShapelessRecipe $recipe, NetworkBinaryStream $stream, int $protocol){
 		$stream->putUnsignedVarInt($recipe->getIngredientCount());
 		foreach($recipe->getIngredientList() as $item){
 			$stream->putSlot($item);
@@ -146,11 +162,14 @@ class CraftingDataPacket extends DataPacket{
 		}
 
 		$stream->put(str_repeat("\x00", 16)); //Null UUID
+		if($protocol >= 354){
+			$stream->putString("crafting_table"); //TODO: blocktype (no prefix) (this might require internal API breaks)
+		}
 
 		return CraftingDataPacket::ENTRY_SHAPELESS;
 	}
 
-	private static function writeShapedRecipe(ShapedRecipe $recipe, NetworkBinaryStream $stream){
+	private static function writeShapedRecipe(ShapedRecipe $recipe, NetworkBinaryStream $stream, int $protocol){
 		$stream->putVarInt($recipe->getWidth());
 		$stream->putVarInt($recipe->getHeight());
 
@@ -167,23 +186,25 @@ class CraftingDataPacket extends DataPacket{
 		}
 
 		$stream->put(str_repeat("\x00", 16)); //Null UUID
+		if($protocol >= 354){
+			$stream->putString("crafting_table"); //TODO: blocktype (no prefix) (this might require internal API breaks)
+		}
 
 		return CraftingDataPacket::ENTRY_SHAPED;
 	}
 
-	private static function writeFurnaceRecipe(FurnaceRecipe $recipe, NetworkBinaryStream $stream){
+	private static function writeFurnaceRecipe(FurnaceRecipe $recipe, NetworkBinaryStream $stream, int $protocol){
+		$stream->putVarInt($recipe->getInput()->getId());
+		$result = CraftingDataPacket::ENTRY_FURNACE;
 		if(!$recipe->getInput()->hasAnyDamageValue()){ //Data recipe
-			$stream->putVarInt($recipe->getInput()->getId());
 			$stream->putVarInt($recipe->getInput()->getDamage());
-			$stream->putSlot($recipe->getResult());
-
-			return CraftingDataPacket::ENTRY_FURNACE_DATA;
-		}else{
-			$stream->putVarInt($recipe->getInput()->getId());
-			$stream->putSlot($recipe->getResult());
-
-			return CraftingDataPacket::ENTRY_FURNACE;
+			$result = CraftingDataPacket::ENTRY_FURNACE_DATA;
 		}
+		$stream->putSlot($recipe->getResult());
+		if($protocol >= 354){
+			$stream->putString("furnace"); //TODO: blocktype (no prefix) (this might require internal API breaks)
+		}
+		return $result;
 	}
 
 	public function addShapelessRecipe(ShapelessRecipe $recipe){
@@ -203,7 +224,7 @@ class CraftingDataPacket extends DataPacket{
 
 		$writer = new NetworkBinaryStream();
 		foreach($this->entries as $d){
-			$entryType = self::writeEntry($d, $writer);
+			$entryType = self::writeEntry($d, $writer, $this->protocol);
 			if($entryType >= 0){
 				$this->putVarInt($entryType);
 				$this->put($writer->getBuffer());

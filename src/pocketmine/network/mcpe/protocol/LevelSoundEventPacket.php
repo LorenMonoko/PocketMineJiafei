@@ -310,7 +310,13 @@ class LevelSoundEventPacket extends DataPacket{
 	protected function encodePayload(){
 		$this->putUnsignedVarInt($this->sound);
 		$this->putVector3($this->position);
-		$this->putVarInt($this->extraData);
+		$extraData = $this->extraData;
+		if($this->sound === self::SOUND_BREAK_BLOCK || $this->sound === self::SOUND_PLACE){
+			if(isset($this->protocol) && $this->protocol >= 354){
+				$extraData = \pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping::from19To111($extraData);
+			}
+		}
+		$this->putVarInt($extraData);
 		$this->putString($this->entityType);
 		$this->putBool($this->isBabyMob);
 		$this->putBool($this->disableRelativeVolume);

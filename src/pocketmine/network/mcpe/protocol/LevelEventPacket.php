@@ -127,7 +127,13 @@ class LevelEventPacket extends DataPacket{
 	protected function encodePayload(){
 		$this->putVarInt($this->evid);
 		$this->putVector3Nullable($this->position);
-		$this->putVarInt($this->data);
+		$data = $this->data;
+		if($this->evid === self::EVENT_PARTICLE_DESTROY || $this->evid === self::EVENT_PARTICLE_PUNCH_BLOCK){
+			if(isset($this->protocol) && $this->protocol >= 354){
+				$data = \pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping::from19To111($data);
+			}
+		}
+		$this->putVarInt($data);
 	}
 
 	public function handle(NetworkSession $session) : bool{

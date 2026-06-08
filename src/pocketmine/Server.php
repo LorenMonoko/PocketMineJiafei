@@ -1902,10 +1902,24 @@ class Server{
 		$targets = array_filter($players, function(Player $player) : bool{ return $player->isConnected(); });
 
 		if(!empty($targets)){
-			foreach($packets as $p){
-				$pk = new BatchPacket();
-				$pk->addPacket($p);
-				$this->broadcastPacketsCallback($pk, $targets, $immediate);
+			$groups = [];
+			foreach($targets as $player){
+				$groups[$player->protocolVersion ?? ProtocolInfo::CURRENT_PROTOCOL][] = $player;
+			}
+
+			foreach($groups as $protocol => $groupPlayers){
+				$clonedPackets = [];
+				foreach($packets as $p){
+					$clone = clone $p;
+					$clone->protocol = $protocol;
+					$clonedPackets[] = $clone;
+				}
+
+				foreach($clonedPackets as $p){
+					$pk = new BatchPacket();
+					$pk->addPacket($p);
+					$this->broadcastPacketsCallback($pk, $groupPlayers, $immediate);
+				}
 			}
 		}
 
