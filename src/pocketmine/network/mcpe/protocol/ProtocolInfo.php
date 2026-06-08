@@ -43,8 +43,7 @@ interface ProtocolInfo{
 
 	public const ACCEPTED_PROTOCOLS = [
 		332, // 1.9.1
-		354, // 1.11.4
-		361  // 1.12.0
+		354  // 1.11.4
 	];
 
 	/**
