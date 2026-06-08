@@ -65,7 +65,11 @@ class UpdateBlockPacket extends DataPacket{
 
 	protected function encodePayload(){
 		$this->putBlockPosition($this->x, $this->y, $this->z);
-		$this->putUnsignedVarInt($this->blockRuntimeId);
+		$blockRuntimeId = $this->blockRuntimeId;
+		if($this->protocol >= 354){
+			$blockRuntimeId = \pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping::from19To111($blockRuntimeId);
+		}
+		$this->putUnsignedVarInt($blockRuntimeId);
 		$this->putUnsignedVarInt($this->flags);
 		$this->putUnsignedVarInt($this->dataLayerId);
 	}

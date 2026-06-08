@@ -75,12 +75,12 @@ class LoginPacket extends DataPacket{
 	}
 
 	public function mayHaveUnreadBytes() : bool{
-		return $this->protocol !== null and $this->protocol !== ProtocolInfo::CURRENT_PROTOCOL;
+		return $this->protocol !== null and !in_array($this->protocol, ProtocolInfo::ACCEPTED_PROTOCOLS);
 	}
 
 	protected function decodePayload(){
 		$this->protocol = $this->getInt();
-
+		// We keep the actual protocol here, spoofing happens in handleLogin to allow tracking.
 		try{
 			$this->decodeConnectionRequest();
 		}catch(\Throwable $e){

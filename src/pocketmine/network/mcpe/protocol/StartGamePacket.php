@@ -247,18 +247,23 @@ class StartGamePacket extends DataPacket{
 
 		$this->putVarInt($this->enchantmentSeed);
 
-		if(self::$runtimeIdTable === null){
-			//this is a really nasty hack, but it'll do for now
-			$stream = new NetworkBinaryStream();
-			$data = RuntimeBlockMapping::getBedrockKnownStates();
-			$stream->putUnsignedVarInt(count($data));
-			foreach($data as $v){
-				$stream->putString($v["name"]);
-				$stream->putLShort($v["data"]);
+		$table = RuntimeBlockMapping::getRuntimeIdTable($this->protocol);
+		if($table !== null){
+			$this->put($table);
+		}else{
+			if(self::$runtimeIdTable === null){
+				//this is a really nasty hack, but it'll do for now
+				$stream = new NetworkBinaryStream();
+				$data = RuntimeBlockMapping::getBedrockKnownStates();
+				$stream->putUnsignedVarInt(count($data));
+				foreach($data as $v){
+					$stream->putString($v["name"]);
+					$stream->putLShort($v["data"]);
+				}
+				self::$runtimeIdTable = $stream->buffer;
 			}
-			self::$runtimeIdTable = $stream->buffer;
+			$this->put(self::$runtimeIdTable);
 		}
-		$this->put(self::$runtimeIdTable);
 
 		$this->putString($this->multiplayerCorrelationId);
 	}

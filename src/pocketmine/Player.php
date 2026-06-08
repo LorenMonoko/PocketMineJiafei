@@ -354,6 +354,9 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	protected $locale = "en_US";
 
 	/** @var int */
+	public $protocolVersion = ProtocolInfo::CURRENT_PROTOCOL;
+
+	/** @var int */
 	protected $startAction = -1;
 	/** @var int[] ID => ticks map */
 	protected $usedItemsCooldown = [];
@@ -1866,7 +1869,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 			return false;
 		}
 
-		if($packet->protocol !== ProtocolInfo::CURRENT_PROTOCOL){
+		if(!in_array($packet->protocol, ProtocolInfo::ACCEPTED_PROTOCOLS)){
 			if($packet->protocol < ProtocolInfo::CURRENT_PROTOCOL){
 				$this->sendPlayStatus(PlayStatusPacket::LOGIN_FAILED_CLIENT, true);
 			}else{
@@ -1878,6 +1881,9 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 			return true;
 		}
+
+		$this->protocolVersion = $packet->protocol;
+		$packet->protocol = ProtocolInfo::CURRENT_PROTOCOL;
 
 		if(!self::isValidUserName($packet->username)){
 			$this->close("", "disconnectionScreen.invalidName");
@@ -3143,6 +3149,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	 * @return bool|int
 	 */
 	public function sendDataPacket(DataPacket $packet, bool $needACK = false, bool $immediate = false){
+		$packet->protocol = $this->protocolVersion;
 		if(!$this->isConnected()){
 			return false;
 		}

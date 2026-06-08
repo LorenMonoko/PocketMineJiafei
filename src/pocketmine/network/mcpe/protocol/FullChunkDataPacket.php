@@ -47,7 +47,40 @@ class FullChunkDataPacket extends DataPacket{
 	protected function encodePayload(){
 		$this->putVarInt($this->chunkX);
 		$this->putVarInt($this->chunkZ);
-		$this->putString($this->data);
+
+		$data = $this->data;
+		if($this->protocol >= 354){
+			$newData = "";
+			$offset = 0;
+			$len = strlen($data);
+			// 16 is the standard number of subchunks for Bedrock 1.9
+			for($i = 0; $i < 16; ++$i){
+				if($offset >= $len) break;
+				$version = ord($data{$offset});
+				if($version === 0){ // SubChunk version 0
+					if($offset + 1 + 4096 + 2048 > $len) break;
+					$ids = substr($data, $offset + 1, 4096);
+					$translatedIds = "";
+					for($j = 0; $j < 4096; ++$j){
+						$id19 = ord($ids{$j});
+						// Map legacy ID to new Runtime ID
+						// Since we can only fit 8 bits, we mask it.
+						// This is imperfect but better than nothing.
+						$translatedIds .= chr(\pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping::from19To111Legacy($id19) & 0xff);
+					}
+					$newData .= "\x00" . $translatedIds . substr($data, $offset + 1 + 4096, 2048);
+					$offset += 1 + 4096 + 2048;
+				}else{
+					break; // Stop if we hit something unexpected
+				}
+			}
+			if($offset < $len){
+				$newData .= substr($data, $offset);
+			}
+			$data = $newData;
+		}
+
+		$this->putString($data);
 	}
 
 	public function handle(NetworkSession $session) : bool{

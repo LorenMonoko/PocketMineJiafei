@@ -49,8 +49,11 @@ abstract class DataPacket extends NetworkBinaryStream{
 	/** @var int */
 	public $recipientSubId = 0;
 
+	/** @var int */
+	public $protocol = ProtocolInfo::CURRENT_PROTOCOL;
+
 	public function pid(){
-		return $this::NETWORK_ID;
+		return static::NETWORK_ID;
 	}
 
 	public function getName() : string{

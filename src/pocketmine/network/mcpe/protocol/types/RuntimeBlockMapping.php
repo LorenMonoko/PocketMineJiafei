@@ -43,6 +43,11 @@ final class RuntimeBlockMapping{
 	/** @var mixed[] */
 	private static $bedrockKnownStates;
 
+	/** @var string|null */
+	private static $runtimeIdTable111 = null;
+	/** @var int[] */
+	private static $translateTo111 = [];
+
 	private function __construct(){
 		//NOOP
 	}
@@ -59,6 +64,64 @@ final class RuntimeBlockMapping{
 			}
 			self::registerMapping($k, $legacyIdMap[$obj["name"]], $obj["data"]);
 		}
+
+		self::init111($legacyIdMap);
+	}
+
+	private static function init111(array $legacyIdMap) : void{
+		$path = \pocketmine\RESOURCE_PATH . "vanilla/required_block_states_1.11.4.json";
+		if(!file_exists($path)) return;
+
+		$compressedTable = json_decode(file_get_contents($path), true);
+		$decompressed = [];
+		foreach($compressedTable as $prefix => $entries){
+			foreach($entries as $shortStringId => $states){
+				foreach($states as $state){
+					$decompressed[] = [
+						"name" => "$prefix:$shortStringId",
+						"data" => $state
+					];
+				}
+			}
+		}
+
+		$stream = new \pocketmine\network\mcpe\NetworkBinaryStream();
+		$stream->putUnsignedVarInt(count($decompressed));
+		foreach($decompressed as $k => $obj){
+			$stream->putString($obj["name"]);
+			$stream->putLShort($obj["data"]);
+
+			// Create mapping: 1.9.1 RuntimeID -> 1.11.4 RuntimeID
+			// We find the 1.9.1 ID for this name+data
+			if(isset($legacyIdMap[$obj["name"]])){
+				$legacyId = $legacyIdMap[$obj["name"]];
+				$meta = $obj["data"];
+				$runtime19 = self::$legacyToRuntimeMap[($legacyId << 4) | $meta] ?? null;
+				if($runtime19 !== null){
+					self::$translateTo111[$runtime19] = $k;
+				}
+			}
+		}
+		self::$runtimeIdTable111 = $stream->buffer;
+	}
+
+	public static function getRuntimeIdTable(int $protocol) : ?string{
+		if($protocol >= 354){
+			return self::$runtimeIdTable111;
+		}
+		return null;
+	}
+
+	public static function from19To111(int $runtimeId19) : int{
+		return self::$translateTo111[$runtimeId19] ?? $runtimeId19;
+	}
+
+	public static function from19To111Legacy(int $legacyId19) : int{
+		// This is a rough mapping for Version 0 chunks.
+		// We map Legacy ID -> 1.11.4 Runtime ID.
+		// Since Version 0 chunk IDs only go up to 255, we can only map the first 256 IDs.
+		$runtime19 = self::$legacyToRuntimeMap[$legacyId19 << 4] ?? 0;
+		return self::$translateTo111[$runtime19] ?? $legacyId19;
 	}
 
 	/**

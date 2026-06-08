@@ -275,13 +275,29 @@ class AvailableCommandsPacket extends DataPacket{
 					}
 					$type = self::ARG_FLAG_POSTFIX | $key;
 				}else{
-					$type = $parameter->paramType;
+					$type = $this->translateArgType($parameter->paramType);
 				}
 
 				$this->putLInt($type);
 				$this->putBool($parameter->isOptional);
+				if($this->protocol >= 354){
+					$this->putByte(0); // byte1 from 1.11.4
+				}
 			}
 		}
+	}
+
+	private function translateArgType(int $type) : int{
+		if($this->protocol >= 354){
+			if(($type & self::ARG_FLAG_VALID) !== 0 and ($type & self::ARG_FLAG_ENUM) === 0){
+				$id = $type & 0xffff;
+				if($id >= self::ARG_TYPE_FILEPATH){
+					$id--;
+				}
+				return self::ARG_FLAG_VALID | $id;
+			}
+		}
+		return $type;
 	}
 
 	private function argTypeToString(int $argtype) : string{
