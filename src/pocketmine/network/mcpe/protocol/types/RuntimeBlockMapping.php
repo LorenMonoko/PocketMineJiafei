@@ -117,11 +117,13 @@ final class RuntimeBlockMapping{
 	}
 
 	public static function from19To111Legacy(int $legacyId19) : int{
-		// This is a rough mapping for Version 0 chunks.
-		// We map Legacy ID -> 1.11.4 Runtime ID.
-		// Since Version 0 chunk IDs only go up to 255, we can only map the first 256 IDs.
+		// Force lookup: 1.9.1 Legacy ID -> 1.11.4 Runtime ID.
+		// If no explicit mapping exists, return AIR (0) instead of the raw legacy ID.
 		$runtime19 = self::$legacyToRuntimeMap[$legacyId19 << 4] ?? 0;
-		return self::$translateTo111[$runtime19] ?? $legacyId19;
+		if(isset(self::$translateTo111[$runtime19])){
+			return self::$translateTo111[$runtime19];
+		}
+		return 0; // Return AIR for unmapped blocks
 	}
 
 	/**
